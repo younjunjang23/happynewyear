@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 연하장 - 장연준</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;400;900&display=swap" rel="stylesheet">
+    <style>
+        /* 1. 커스텀 폰트 설정 */
+        @font-face {
+            font-family: 'younhajang2026';
+            src: url('younhajang2026 Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: black;
+            color: white;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Noto Sans KR', sans-serif;
+            overflow: hidden; 
+            cursor: pointer; 
+        }
+
+        /* 상단 2026 고정 스타일 */
+        .year-label {
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'younhajang2026', sans-serif;
+            font-size: 2rem;
+            letter-spacing: 2px;
+            z-index: 10;
+        }
+
+        /* 마우스 따라 생성되는 텍스트 스타일 */
+        .mouse-text {
+            position: absolute;
+            font-family: 'Noto Sans KR', sans-serif; 
+            font-size: 1.4rem; 
+            font-weight: 500;
+            color: white; 
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5), 0 0 10px rgba(255, 255, 255, 0.2);
+            pointer-events: none; 
+            white-space: nowrap; 
+            opacity: 1;
+            transform: scale(1);
+            animation: fadeOutAndShrink 8s forwards; 
+            z-index: 5;
+        }
+        
+        /* 일시정지 클래스 */
+        .mouse-text.paused {
+            /* === 수정: opacity: 1 !important; 제거 === */
+            animation-play-state: paused !important;
+        }
+
+        /* 텍스트 소멸 애니메이션 */
+        @keyframes fadeOutAndShrink {
+            0% { opacity: 1; transform: scale(1) translateY(0); }
+            100% { opacity: 0; transform: scale(0.8) translateY(-20px); } 
+        }
+
+
+        /* 중앙에 번갈아 나타나는 단어 */
+        .center-word {
+            position: absolute;
+            font-family: 'younhajang2026', sans-serif;
+            font-size: 28vmin; 
+            font-weight: normal;
+            color: black;
+            -webkit-text-stroke: 2px white; 
+            text-stroke: 2px white;
+            
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-out;
+            pointer-events: none;
+            z-index: 20; 
+        }
+
+        .center-word.active {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        
+        .center-word:not(.active) {
+            transform: translate(-50%, -50%) scale(0.8);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="year-label">2026</div>
+
+    
+<div id="word-display" class="center-word active">꿈</div>
+
+<script>
+    const fullSentence = "안녕하세요. 장연준입니다. 여러분께서 항상 아껴주시고 성원해주시고 격려해주시고 보태주시고 믿어주시고 염려해주시고 근심해주시고 걱정해주시고 사랑해주시고 은혜를 내려주시고 신경써주시고 배려해주시고 보살펴주시고 많이 응원해주시고 박수를 주셔서 감사합니다. 내년에는 돈, 건강, 사랑, 꿈 모두 챙기세요.";
+    const flowingTextWords = fullSentence.split(/(\s+)/).filter(s => s.trim().length > 0);
+    
+    let wordIndex = 0; 
+    let lastX = 0;
+    let lastY = 0;
+    const textGenerationThreshold = 70; 
+    let textSizeMultiplier = 1.0; 
+
+    // 상태 및 인터벌 제어 변수
+    let isPaused = false; 
+    let wordIntervalId;   
+
+    // 중앙 단어 변경 로직 함수 (재사용)
+    const words = ["꿈", "건강", "사랑", "돈"];
+    let currentIndex = 0;
+    const wordElement = document.getElementById('word-display');
+    
+    function changeWord() {
+        wordElement.classList.remove('active');
+        setTimeout(() => {
+            currentIndex = (currentIndex + 1) % words.length;
+            wordElement.innerText = words[currentIndex];
+            wordElement.classList.add('active');
+        }, 500);
+    }
+    
+    // 중앙 단어 변경 인터벌 시작
+    function startWordInterval() {
+        if (wordIntervalId) clearInterval(wordIntervalId);
+        wordIntervalId = setInterval(changeWord, 2000);
+    }
+    
+    startWordInterval(); // 페이지 로드 시 인터벌 시작
+
+
+    // 일시정지/재개 제어 함수
+    function setPauseState(state) {
+        isPaused = state;
+
+        // 중앙 단어 변경 제어
+        if (isPaused) {
+            clearInterval(wordIntervalId); 
+        } else {
+            startWordInterval(); 
+        }
+
+        // 움직이는 텍스트 애니메이션 제어
+        document.querySelectorAll('.mouse-text').forEach(textElement => {
+            if (isPaused) {
+                textElement.classList.add('paused'); 
+                /* === NEW: 애니메이션 상태를 유지하기 위해 opacity를 인라인 스타일로 고정 === */
+                // 현재 투명도를 계산하여 인라인 스타일로 설정
+                const currentOpacity = window.getComputedStyle(textElement).opacity;
+                textElement.style.opacity = currentOpacity;
+                // =========================================================================
+            } else {
+                textElement.classList.remove('paused'); 
+                /* === NEW: 재개 시 인라인 스타일 opacity 제거하여 애니메이션 복구 === */
+                textElement.style.opacity = '';
+                // ====================================================================
+            }
+        });
+        
+        // 일시정지 상태일 때 텍스트 크기 변동을 멈춤
+        if (isPaused) {
+             textSizeMultiplier = 1.0; 
+        }
+    }
+
+
+    // 1. 마우스를 누를 때 (mousedown) 일시정지
+    document.addEventListener('mousedown', () => {
+        setPauseState(true); 
+    });
+    
+    // 2. 마우스에서 손을 뗄 때 (mouseup) 재개
+    document.addEventListener('mouseup', () => {
+        setPauseState(false); 
+
+        // 재개 시 텍스트 크기 변동 기능 (클릭 변수 유지)
+        if (textSizeMultiplier === 1.0) {
+            textSizeMultiplier = 0.8;
+        } else if (textSizeMultiplier === 0.8) {
+            textSizeMultiplier = 1.2;
+        } else {
+            textSizeMultiplier = 1.0;
+        }
+    });
+
+
+    // 3. 마우스 움직임 감지
+    document.addEventListener('mousemove', (e) => {
+        if (isPaused) return; // 일시정지 상태면 새 텍스트 생성 중단
+
+        const distance = Math.sqrt(Math.pow(e.clientX - lastX, 2) + Math.pow(e.clientY - lastY, 2));
+
+        if (distance > textGenerationThreshold) {
+            
+            lastX = e.clientX;
+            lastY = e.clientY;
+
+            // 단어 생성
+            const currentWord = flowingTextWords[wordIndex];
+            wordIndex = (wordIndex + 1) % flowingTextWords.length; 
+            
+            if (!currentWord) return;
+
+            const textElement = document.createElement('span');
+            textElement.classList.add('mouse-text');
+            textElement.innerText = currentWord;
+
+            // 텍스트 크기 변수 적용
+            const baseSize = 1.4; 
+            textElement.style.fontSize = `${baseSize * textSizeMultiplier}rem`;
+
+            // 마우스 위치에 배치
+            textElement.style.left = `${e.clientX}px`;
+            textElement.style.top = `${e.clientY}px`;
+
+            document.body.appendChild(textElement);
+
+            // 애니메이션 종료 후 텍스트 제거 리스너
+            textElement.addEventListener('animationend', () => {
+                if (!textElement.classList.contains('paused')) { // 정지 상태가 아닐 때만 제거
+                    textElement.remove();
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>
